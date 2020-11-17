@@ -11,7 +11,7 @@ namespace CacheableProperties
 
     }
 
-    public struct Container<T>
+    public struct Container<T> : IEquatable<Container<T>>
     {
         public Container(Func<T> ctor)
         {
@@ -25,12 +25,18 @@ namespace CacheableProperties
         private readonly Func<T> ctor;
         public T GetValue()
         {
-            if (!initted)
+            lock (value)
             {
-                initted = true;
-                value = ctor();
+                if (!initted)
+                {
+                    initted = true;
+                    value = ctor();
+                }
             }
             return value;
         }
+
+        public bool Equals(Container<T> _)
+            => true;
     }
 }
