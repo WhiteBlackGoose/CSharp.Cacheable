@@ -1,24 +1,15 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using System;
+using System.Collections.Immutable;
 
 namespace CacheableProperties.Generator
 {
     [Generator]
     internal sealed class Generator : ISourceGenerator
     {
-        private static (ImmutableArray<Diagnostic> diagnostics, string? name, SourceText? text) GenerateMapping(
-            ITypeSymbol sourceType, AttributeData attributeData)
-        {
-            var information = new MappingInformation(sourceType, attributeData);
-
-            if (!information.Diagnostics.Any(_ => _.Severity == DiagnosticSeverity.Error))
-            {
-                var text = new MappingBuilder(information).Text;
-                return (information.Diagnostics, $"{sourceType.Name}_To_{information.DestinationType.Name}_Map.g.cs", text);
-            }
-
-            return (ImmutableArray<Diagnostic>.Empty, null, null);
-        }
+        private static (string name, SourceText text) GenerateFields(IPropertySymbol sourceSymbol)
+            => ("", new Builder(sourceSymbol).ToSourceText());
 
         public void Execute(GeneratorExecutionContext context)
         {
@@ -28,7 +19,8 @@ namespace CacheableProperties.Generator
             var model = context.Compilation.GetSemanticModel(candidate.SyntaxTree);
             if (model.GetDeclaredSymbol(candidate) is IPropertySymbol propertySymbol)
             {
-                
+                var (name, text) = GenerateFields(propertySymbol);
+                context.AddSource(name, text);
             }
         }
 
